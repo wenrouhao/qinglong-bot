@@ -27,7 +27,7 @@ async function handleFileUpload(context: Context): Promise<void> {
         }
 
         const fileExtension = fileName.split('.').pop()?.toLowerCase();
-        const supportedExtensions = ['js', 'py', 'sh', 'ts', 'mjs'];
+        const supportedExtensions = ['js', 'py', 'sh', 'ts', 'mjs', 'txt'];
         
         if (!fileExtension || !supportedExtensions.includes(fileExtension)) {
             await context.reply(`不支持的文件类型。支持的文件类型：${supportedExtensions.join(', ')}`);
