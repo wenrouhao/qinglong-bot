@@ -8,11 +8,11 @@ services:
     restart: always
     environment:
       TZ: Asia/Shanghai
-      QINGLONG_URL: http://1.95.206.148:5700
-      QINGLONG_CLIENT_ID: It2Dlc_x2gBp
-      QINGLONG_CLIENT_SECRET: JF_k4luKYmSExeJM1bLSgPp2
-      TG_BOT_TOKEN: 6515417758:AAGSHHwLK0aM3VMIApdQvxnr6R0Us63x4Xw
-      TG_PROXY: http://172.20.10.3:7899
-      TG_API_ROOT: https://tg.wrh.one
+      QINGLONG_URL: ${QINGLONG_URL}
+      QINGLONG_CLIENT_ID: ${QINGLONG_CLIENT_ID}
+      QINGLONG_CLIENT_SECRET: ${QINGLONG_CLIENT_SECRET}
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN}
+      TG_PROXY: ${TG_PROXY}
+      TG_API_ROOT: ${TG_API_ROOT}
     ports:
       - '3000:3000'
