@@ -9,6 +9,7 @@ import {
     getAllCronJobNames,
     triggerJob,
     getCronJobLog,
+    createCronJob,
 } from '../api/qinglong.js';
 import {USAGE_HELP_TEXT, Command, SimpleCommand} from '../constants.js';
 import {getErrorMessage} from './error_utils.js';
@@ -64,6 +65,11 @@ async function processCommand(command: string, content: string): Promise<string>
             case Command.GET_LOG:
             case SimpleCommand.GET_LOG: {
                 responseMessage = await getCronJobLog(content);
+                break;
+            }
+            case Command.CREATE_CRON_JOB:
+            case SimpleCommand.CREATE_CRON_JOB: {
+                responseMessage = await handleCreateCronJob(content);
                 break;
             }
             default: {
@@ -168,6 +174,26 @@ async function handleDisableEnv(content: string) {
     responseMessage += `\n\n当前环境变量列表:\n\n${allEnvKeys.join('\n\n')}`;
 
     return responseMessage;
+}
+
+async function handleCreateCronJob(content: string) {
+    const parts = content.split('|').map(part => part.trim());
+    
+    if (parts.length < 3) {
+        return '创建定时任务失败，格式错误。正确格式：任务名称|cron表达式|命令\n例如：每日签到|0 0 * * *|task myscript.js';
+    }
+
+    const [name, schedule, command] = parts;
+
+    try {
+        await createCronJob(name, command, schedule);
+        const responseMessage = `成功创建定时任务\n\n任务名称：${name}\n执行时间：${schedule}\n执行命令：${command}`;
+        return responseMessage;
+    } catch (error) {
+        const errorMessage = getErrorMessage(error);
+        console.error(errorMessage);
+        return `创建定时任务失败，错误信息：${errorMessage}`;
+    }
 }
 
 export {

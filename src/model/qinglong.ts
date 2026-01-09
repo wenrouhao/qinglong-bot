@@ -70,11 +70,26 @@ interface getJobLogResponse {
     [property: string]: string
 }
 
+interface UploadFileRequest extends QingLongRequest {
+    filename: string,
+    content: string,
+    path?: string,
+}
+
+interface CreateCronJobRequest extends QingLongRequest {
+    name: string,
+    command: string,
+    schedule: string,
+    labels?: string[],
+}
+
 export {
     QingLongRequest,
     AddEnvRequest,
     UpdateEnvRequest,
     TriggerJobRequest,
+    UploadFileRequest,
+    CreateCronJobRequest,
     Response,
     LoginResult,
     GetAllEnvResponse,

@@ -5,6 +5,8 @@ import {
     TriggerJobRequest,
     AddEnvRequest,
     UpdateEnvRequest,
+    UploadFileRequest,
+    CreateCronJobRequest,
     Response,
     LoginResult,
     GetAllEnvResponse,
@@ -30,6 +32,8 @@ let clientSecret = '';
 
 let token = '';
 let expiration = 0;
+let isTokenReady = false;
+let loginPromise: Promise<void> | null = null;
 
 function initializeQingLongAPIClient() {
     baseUrl = process.env.QINGLONG_URL || '';
@@ -40,7 +44,9 @@ function initializeQingLongAPIClient() {
         throw new QingLongInitializationError();
     }
 
-    void login();
+    login().catch(error => {
+        console.error('青龙Token初始化失败:', error);
+    });
     setInterval(async () => {
         const currentTimestamp = Date.now();
         if (currentTimestamp - 5000 >= expiration) {
@@ -50,15 +56,32 @@ function initializeQingLongAPIClient() {
 }
 
 async function login() {
-    const response = await axios.get(`${baseUrl}${util.format(QingLongAPI.LOGIN, clientId, clientSecret)}`);
-    const loginResponse = response.data as Response;
-    ensureSuccessfulResponse(loginResponse);
+    if (loginPromise) {
+        return loginPromise;
+    }
 
-    const loginResult: LoginResult = loginResponse.data as LoginResult;
-    token = loginResult.token;
-    expiration = loginResult.expiration * 1000;
+    loginPromise = (async () => {
+        try {
+            console.log('开始登录青龙面板...');
+            const response = await axios.get(`${baseUrl}${util.format(QingLongAPI.LOGIN, clientId, clientSecret)}`);
+            const loginResponse = response.data as Response;
+            ensureSuccessfulResponse(loginResponse);
 
-    console.info(`成功刷新青龙Token，有效期至${new Date(expiration).toLocaleString()}`);
+            const loginResult: LoginResult = loginResponse.data as LoginResult;
+            token = loginResult.token;
+            expiration = loginResult.expiration * 1000;
+            isTokenReady = true;
+
+            console.info(`成功刷新青龙Token，有效期至${new Date(expiration).toLocaleString()}`);
+        } catch (error) {
+            console.error('登录青龙面板失败:', error);
+            throw error;
+        } finally {
+            loginPromise = null;
+        }
+    })();
+
+    return loginPromise;
 }
 
 async function getAllEnvironmentVariables(): Promise<GetAllEnvResponse[]> {
@@ -185,7 +208,32 @@ async function getCronJobLog(jobName: string): Promise<string> {
     return jobLog.split('\n').join('\n\n');
 }
 
+async function uploadFile(filename: string, content: string, path?: string): Promise<void> {
+    const uploadFileRequest: UploadFileRequest = {
+        filename,
+        content,
+        path: path || ''
+    };
+
+    await doPostRequest<UploadFileRequest>(QingLongAPI.SCRIPTS, uploadFileRequest);
+}
+
+async function createCronJob(name: string, command: string, schedule: string, labels?: string[]): Promise<void> {
+    const createCronJobRequest: CreateCronJobRequest = {
+        name,
+        command,
+        schedule,
+        labels: labels || []
+    };
+
+    await doPostRequest<CreateCronJobRequest>(QingLongAPI.CRON_JOB, createCronJobRequest);
+}
+
 async function doGetRequest<T>(path: string): Promise<T> {
+    if (!isTokenReady) {
+        await login();
+    }
+
     const response = await axios.get(
         `${baseUrl}${path}`,
         getAxiosRequestConfig()
@@ -198,6 +246,10 @@ async function doGetRequest<T>(path: string): Promise<T> {
 }
 
 async function doPutRequest<T extends QingLongRequest>(path: string, data: T): Promise<void> {
+    if (!isTokenReady) {
+        await login();
+    }
+
     const response = await axios.put(
         `${baseUrl}${path}`,
         data,
@@ -209,6 +261,10 @@ async function doPutRequest<T extends QingLongRequest>(path: string, data: T): P
 }
 
 async function doPostRequest<T extends QingLongRequest>(path: string, data: T): Promise<void> {
+    if (!isTokenReady) {
+        await login();
+    }
+
     const response = await axios.post(
         `${baseUrl}${path}`,
         data,
@@ -220,6 +276,10 @@ async function doPostRequest<T extends QingLongRequest>(path: string, data: T): 
 }
 
 async function doDeleteRequest<T extends QingLongRequest>(path: string, data: T) {
+    if (!isTokenReady) {
+        await login();
+    }
+
     const response = await axios.delete(
         `${baseUrl}${path}`,
         {
@@ -236,6 +296,7 @@ function ensureSuccessfulResponse(response: Response) {
     const code = response.code;
     if (code !== 200) {
         const message = response.message || '发生了未知错误';
+        console.error(`API请求失败，错误码：${code}，错误信息：${message}`);
         throw new QingLongAPIError(message);
     }
 }
@@ -259,4 +320,6 @@ export {
     getAllCronJobNames,
     triggerJob,
     getCronJobLog,
+    uploadFile,
+    createCronJob,
 };

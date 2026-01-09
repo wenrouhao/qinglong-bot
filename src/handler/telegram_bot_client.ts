@@ -7,6 +7,7 @@ import {Command, USAGE_HELP_TEXT} from '../constants.js';
 import {processCommand} from '../util/command_processor.js';
 import {getErrorMessage} from '../util/error_utils.js';
 import { extractCommandAndContent } from '../util/utils.js';
+import {handleFileUpload, handleCallbackQuery, handleJsonParams} from '../util/file_processor.js';
 
 function registerTelegramBotClient() {
     const botToken = process.env.TG_BOT_TOKEN as string;
@@ -41,6 +42,8 @@ function registerTelegramBotClient() {
     bot.start(ctx => handleStartCommand(ctx));
     bot.command('help', handleHelpCommand);
     bot.on(message('text'), handleCommand);
+    bot.on(message('document'), handleFileUpload);
+    bot.on('callback_query', handleCallbackQuery);
     bot.catch(error => console.error(getErrorMessage(error)));
 
     process.once('SIGINT', () => bot.stop('SIGINT'));
@@ -63,10 +66,24 @@ async function handleHelpCommand(context: Context): Promise<void> {
 }
 
 async function handleCommand(context: Context): Promise<void> {
+    console.log('📥 [handleCommand] 开始处理文本消息');
+    console.log(`👤 [handleCommand] 用户ID: ${context.from?.id}`);
+    console.log(`📝 [handleCommand] 消息内容: ${context.text?.substring(0, 100)}${context.text && context.text.length > 100 ? '...' : ''}`);
+    
+    const isJsonParams = await handleJsonParams(context);
+    if (isJsonParams) {
+        console.log('✅ [handleCommand] JSON参数处理完成，跳过命令处理');
+        return;
+    }
+    console.log('ℹ️ [handleCommand] 不是JSON参数，继续处理普通命令');
+
     const messageText = context.text || '';
     const [command, content] = extractCommandAndContent(messageText);
+    console.log(`🔍 [handleCommand] 解析命令: ${command}, 内容: ${content?.substring(0, 50)}${content && content.length > 50 ? '...' : ''}`);
+    
     const responseMessage = await processCommand(command, content);
     await sendReply(context, responseMessage);
+    console.log('✅ [handleCommand] 命令处理完成');
 }
 
 function formatHelpMessage(): string {

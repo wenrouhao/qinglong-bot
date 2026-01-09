@@ -8,6 +8,8 @@ enum Command {
     GET_ALL_CRON_JOBS = '获取所有任务',
     TRIGGER_JOB = '运行任务',
     GET_LOG = '获取任务日志',
+    UPLOAD_SCRIPT = '上传脚本',
+    CREATE_CRON_JOB = '创建定时任务',
 }
 
 enum SimpleCommand {
@@ -20,6 +22,8 @@ enum SimpleCommand {
     GET_ALL_CRON_JOBS = 'cron list',
     TRIGGER_JOB = 'cron run',
     GET_LOG = 'cron log',
+    UPLOAD_SCRIPT = 'script upload',
+    CREATE_CRON_JOB = 'cron create',
 }
 
 const QingLongAPI = {
@@ -30,6 +34,7 @@ const QingLongAPI = {
     CRON_JOB: '/open/crons',
     TRIGGER_JOB: '/open/crons/run',
     GET_LOG: '/open/crons/%s/log',
+    SCRIPTS: '/open/scripts',
 };
 
 const USAGE_HELP_TEXT = `
@@ -47,6 +52,8 @@ const USAGE_HELP_TEXT = `
 - 获取所有任务：直接向机器人发送 **获取所有任务** 命令即可
 - 运行任务：**运行任务#定时任务名称**
 - 获取任务日志: **获取任务日志#定时任务名称**
+- 上传脚本：直接向机器人发送脚本文件即可（支持 .js, .py, .sh, .ts 等文件）
+- 创建定时任务： **创建定时任务#任务名称|cron表达式|命令** （如 **创建定时任务#每日签到|0 0 * * *|task myscript.js** ）
 ---
 简单用法：
 - 获取所有环境变量： **env list**
@@ -58,6 +65,8 @@ const USAGE_HELP_TEXT = `
 - 获取所有任务： **cron list**
 - 运行任务： **cron run 定时任务名称**
 - 获取任务日志: **cron log 定时任务名称**
+- 上传脚本：直接向机器人发送脚本文件即可
+- 创建定时任务： **cron create 任务名称|cron表达式|命令**
 `;
 
 export {
