@@ -40,15 +40,20 @@ async function handleFileUpload(context: Context): Promise<void> {
         console.log(`📁 [handleFileUpload] 文件信息: ${JSON.stringify(file)}`);
         
         const botToken = process.env.TG_BOT_TOKEN as string;
-        const tgApiRoot = process.env.TG_API_ROOT as string || "https://api.telegram.org";
-        const fileUrl = `${tgApiRoot}/file/bot${botToken}/${file.file_path}`;
-        console.log(`📥 [handleFileUpload] 文件下载URL: ${fileUrl}`);
-        
-        let agent: HttpsProxyAgent<string> | undefined = undefined;
         const proxyUrl = process.env.TG_PROXY || '';
+        
+        let fileUrl: string;
+        let agent: HttpsProxyAgent<string> | undefined = undefined;
+        
         if (proxyUrl) {
+            fileUrl = `https://api.telegram.org/file/bot${botToken}/${file.file_path}`;
             agent = new HttpsProxyAgent(proxyUrl);
-            console.log(`🔗 [handleFileUpload] 使用代理: ${proxyUrl}`);
+            console.log(`� [handleFileUpload] 使用代理: ${proxyUrl}`);
+            console.log(`📥 [handleFileUpload] 使用官方API: ${fileUrl}`);
+        } else {
+            const tgApiRoot = process.env.TG_API_ROOT as string || "https://api.telegram.org";
+            fileUrl = `${tgApiRoot}/file/bot${botToken}/${file.file_path}`;
+            console.log(`� [handleFileUpload] 使用TG_API_ROOT: ${fileUrl}`);
         }
         
         const response = await axios.get(fileUrl, {
@@ -58,6 +63,7 @@ async function handleFileUpload(context: Context): Promise<void> {
         
         const fileContent = response.data;
         console.log(`✅ [handleFileUpload] 文件下载成功，内容长度: ${fileContent.length}`);
+        console.log(`📄 [handleFileUpload] 文件内容预览（前500字符）: ${fileContent.substring(0, 500)}`);
 
         const userId = context.from?.id;
         if (!userId) {

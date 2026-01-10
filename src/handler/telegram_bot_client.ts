@@ -22,16 +22,16 @@ function registerTelegramBotClient() {
         agent = new HttpsProxyAgent(proxyUrl);
     }
 
-    const tgApiRoot = process.env.TG_API_ROOT as string || "https://api.telegram.org";
     let bot;
     if (agent) {
         bot = new Telegraf(botToken, {
             telegram: {
                 agent: agent,
-                apiRoot: tgApiRoot,
+                apiRoot: 'https://api.telegram.org',
             },
         });
     } else {
+        const tgApiRoot = process.env.TG_API_ROOT as string || "https://api.telegram.org";
         bot = new Telegraf(botToken, {
             telegram: {
                 apiRoot: tgApiRoot,
